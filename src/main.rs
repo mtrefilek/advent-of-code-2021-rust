@@ -1,4 +1,5 @@
 use reqwest::{Url, ClientBuilder, header};
+use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,10 +13,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn get_input(day: i32) -> Result<String, Box<dyn std::error::Error>> {
+    let session_token = env::var("AOC_SESSION")?;
     let str = format!("https://adventofcode.com/2021/day/{}/input", day);
     let url = str.parse::<Url>().unwrap();
     let mut headers = header::HeaderMap::new();
-    headers.insert("Cookie", header::HeaderValue::from_static("session=53616c7465645f5f0ba5b4d2648d429e5eddd0b34eb4a8698ca198d44a2284cd40e54c36ec1d28ec749fb1f5dea487d8"));
+    let token = format!("session={}", session_token).to_string();
+    headers.insert("Cookie", header::HeaderValue::from_str(&*token)?);
     let client = ClientBuilder::new().default_headers(headers).build()?;
 
     let resp = client.get(url).send().await?
