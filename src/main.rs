@@ -4,7 +4,7 @@ use std::env;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let day = 2;
+    let day = 3;
     let step = 2;
 
     execute(day, step).await?;
@@ -47,6 +47,8 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
             three_one(resp).to_string()
         },
         6 => three_two(resp).to_string(),
+        7 => four_one(resp).to_string(),
+        8 => four_two(resp).to_string(),
         _ => "Not Implemented".to_string()
     };
 
@@ -55,14 +57,160 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
     Ok(())
 }
 
-fn three_two(resp: String) -> i32 {
-
+fn four_two(resp: String) -> i32 {
     return 0;
 }
 
-fn three_one(resp: String) -> i32 {
-
+fn four_one(resp: String) -> i32 {
     return 0;
+}
+
+// Gross code but need to go to sleep
+fn three_two(resp: String) -> i32 {
+    let lines = resp.lines();
+    let mut vec: Vec<(i32, i32)> = Vec::new();
+    let mut vec_lines: Vec<String> = Vec::new();
+
+    for line in lines {
+        vec_lines.push(line.to_string());
+        for (index, char) in line.chars().enumerate() {
+            let i = char.to_digit(10).unwrap();
+            if vec.get(index) == None {
+                vec.push((0, 0))
+            }
+            if i == 0 {
+                vec[index].0 += 1;
+            } else if i == 1 {
+                vec[index].1 += 1;
+            }
+        }
+    }
+    let mut vec_lines_2 = vec_lines.clone();
+
+    let mut index = 0;
+    for tup2 in &vec {
+        let mut tup = (0,0);
+
+        for n in &vec_lines {
+           if n.chars().nth(index).unwrap() == '0' {
+               tup.0 += 1;
+           } else {
+               tup.1 += 1;
+           }
+        }
+
+        let max: char;
+        if tup.0 > tup.1 {
+            max = '0';
+        } else {
+            max = '1';
+        }
+        let mut n = 0;
+        loop {
+            if vec_lines.len() == 1 {
+                break;
+            }
+            if vec_lines.get(n as usize) == None {
+                break;
+            }
+            if vec_lines[n as usize].chars().nth(index).unwrap() != max {
+                vec_lines.remove(n as usize);
+                n -= 1;
+            }
+            n+=1;
+        }
+        index += 1;
+    }
+    println!("{:?}", vec_lines);
+    index = 0;
+    for tup2 in &vec {
+        let mut tup = (0,0);
+
+        for n in &vec_lines_2 {
+            if n.chars().nth(index).unwrap() == '0' {
+                tup.0 += 1;
+            } else {
+                tup.1 += 1;
+            }
+        }
+        let min: char;
+        if tup.0 > tup.1 {
+            min = '1';
+        } else {
+            min = '0';
+        }
+        let mut n = 0;
+        loop {
+            if vec_lines_2.len() == 1 {
+                break;
+            }
+            if vec_lines_2.get(n as usize) == None {
+                break;
+            }
+            if vec_lines_2[n as usize].chars().nth(index).unwrap() != min {
+                vec_lines_2.remove(n as usize);
+                n -= 1;
+            }
+            n+=1;
+        }
+        index += 1;
+    }
+    println!("{:?}", vec);
+    println!("{:?}", vec_lines_2);
+
+
+    // println!("{}", vec_lines[0]);
+    // println!("{}", vec_lines_2[0]);
+    let o_str = vec_lines[0].to_string();
+    let c_str = vec_lines_2[0].to_string();
+    let mut o = 0;
+    let mut c = 0;
+    let mut len = vec.len();
+    let mut i = 0;
+    for tup in vec {
+        len -= 1;
+        let base: i32 = 2;
+        o += o_str.chars().nth(i).unwrap().to_digit(10).unwrap() as i32 * base.pow(len as u32);
+        c += c_str.chars().nth(i).unwrap().to_digit(10).unwrap() as i32 * base.pow(len as u32);
+
+        i += 1;
+    }
+    return o*c;
+}
+
+fn three_one(resp: String) -> i32 {
+    let lines = resp.lines();
+    let mut vec: Vec<(i32, i32)> = Vec::new();
+
+    for line in lines {
+        for (index, char) in line.chars().enumerate() {
+            let i = char.to_digit(10).unwrap();
+            if vec.get(index) == None {
+                vec.push((0, 0))
+            }
+            if i == 0 {
+                vec[index].0 += 1;
+            } else if i == 1 {
+                vec[index].1 += 1;
+            }
+        }
+    }
+
+    println!("{:?}", vec);
+
+    let mut g = 0;
+    let mut e = 0;
+    let mut len = vec.len();
+    for tup in &vec {
+        len -= 1;
+        let base: i32 = 2;
+        if tup.0 > tup.1 {
+            e += base.pow(len as u32);
+        } else {
+            g += base.pow(len as u32);
+        }
+    }
+    return g*e;
 }
 
 fn two_two(resp: String) -> i32 {
