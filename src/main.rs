@@ -4,8 +4,8 @@ use std::env;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let day = 3;
-    let step = 2;
+    let day = 4;
+    let step = 1;
 
     execute(day, step).await?;
 
@@ -62,7 +62,116 @@ fn four_two(resp: String) -> i32 {
 }
 
 fn four_one(resp: String) -> i32 {
-    return 0;
+    let mut lines = resp.lines();
+    let bingo_nums = lines.next().unwrap();
+
+    let mut boards:  Vec<Vec<Vec<(i32, bool)>>> = Vec::new();
+
+    let mut i: i32 = -1;
+    for line in lines {
+        if line.len() == 0 {
+            let mut board: Vec<Vec<(i32, bool)>> = Vec::new();
+            boards.push(board);
+            i += 1;
+        }
+        else {
+           let mut row: Vec<(i32, bool)> = Vec::new();
+            for s in line.to_string().split_whitespace() {
+                let num = s.parse::<i32>().unwrap();
+                let mut tup = (num, false);
+                row.push(tup);
+            }
+            boards[i as usize].push(row);
+        }
+    }
+
+    let nums = bingo_nums.split(',');
+    let mut wins = 0;
+    let mut last_num = 0;
+    let mut solved_boards: Vec<i32> = Vec::new();
+    for num in nums {
+        println!("{:?}", solved_boards);
+        let num_i = num.parse::<i32>().unwrap();
+        let mut board_num = 0;
+        for mut board in boards.iter_mut() {
+            let mut skip = false;
+            for i in &solved_boards {
+                if *i == board_num {
+                    skip = true;
+                }
+            }
+            if skip {
+                board_num += 1;
+                continue;
+            }
+            for mut row in board.iter_mut() {
+                let mut index2 = 0;
+                for index in row.iter_mut() {
+                    if index.0 == num_i {
+                        index.1 = true;
+                    }
+                    index2 += 1;
+                }
+            }
+            board_num += 1;
+        }
+
+        board_num = 0;
+        for board in &boards {
+            let mut skip = false;
+            for i in &solved_boards {
+                if *i == board_num {
+                    skip = true;
+                }
+            }
+            if skip {
+                board_num += 1;
+                continue;
+            }
+            let mut solved = false;
+            // Check Rows
+            for row in board {
+                let mut index = 0;
+                for i in row {
+                    if i.1 == false {
+                        break;
+                    } else if index == 4{
+                        solved = true;
+                    }
+                    index += 1;
+                }
+            }
+            for i in 0..5 {
+                let mut index = 0;
+                for row in board {
+                    if row.get(i).unwrap().1 == false {
+                        break;
+                    } else if index == 4 {
+                        solved = true;
+                    }
+                    index += 1;
+                }
+            }
+            if solved {
+                last_num = num_i;
+                solved = false;
+                solved_boards.push(board_num);
+                let mut score = 0;
+                for row in board {
+                    for i in row {
+                        if i.1 == false {
+                            score += i.0;
+                        }
+                    }
+                }
+                wins = num_i * score;
+                println!("{}", wins);
+                println!("{}", num_i);
+            }
+            board_num += 1;
+        }
+    }
+    return wins;
 }
 
 // Gross code but need to go to sleep
@@ -88,7 +197,7 @@ fn three_two(resp: String) -> i32 {
     let mut vec_lines_2 = vec_lines.clone();
 
     let mut index = 0;
-    for tup2 in &vec {
+    for _tup2 in &vec {
         let mut tup = (0,0);
 
         for n in &vec_lines {
@@ -121,9 +230,8 @@ fn three_two(resp: String) -> i32 {
         }
         index += 1;
     }
-    println!("{:?}", vec_lines);
     index = 0;
-    for tup2 in &vec {
+    for _tup2 in &vec {
         let mut tup = (0,0);
 
         for n in &vec_lines_2 {
@@ -155,19 +263,15 @@ fn three_two(resp: String) -> i32 {
         }
         index += 1;
     }
-    println!("{:?}", vec);
-    println!("{:?}", vec_lines_2);
 
 
-    // println!("{}", vec_lines[0]);
-    // println!("{}", vec_lines_2[0]);
     let o_str = vec_lines[0].to_string();
     let c_str = vec_lines_2[0].to_string();
     let mut o = 0;
     let mut c = 0;
     let mut len = vec.len();
     let mut i = 0;
-    for tup in vec {
+    for _tup in vec {
         len -= 1;
         let base: i32 = 2;
         o += o_str.chars().nth(i).unwrap().to_digit(10).unwrap() as i32 * base.pow(len as u32);
