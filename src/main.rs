@@ -1,10 +1,11 @@
 use reqwest::{Url, ClientBuilder, header};
 use std::env;
+use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let day = 4;
+    let day = 6;
     let step = 1;
 
     execute(day, step).await?;
@@ -49,12 +50,175 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
         6 => three_two(resp).to_string(),
         7 => four_one(resp).to_string(),
         8 => four_two(resp).to_string(),
+        9 => five_one(resp).to_string(),
+        10 => five_two(resp).to_string(),
+        11 => six_one(resp).to_string(),
+        12 => six_two(resp).to_string(),
         _ => "Not Implemented".to_string()
     };
 
     print!("{}", res);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{five_two, six_one};
+
+    #[test]
+    fn five_two_works() {
+        let str = "0,9 -> 5,9\n8,0 -> 0,8\n9,4 -> 3,4\n2,2 -> 2,1\n7,0 -> 7,4\n6,4 -> 2,0\n0,9 -> 2,9\n3,4 -> 1,4\n0,0 -> 8,8\n5,5 -> 8,2";
+        assert_eq!(five_two(str.parse().unwrap()), 12)
+    }
+
+    #[test]
+    fn six_one_works() {
+        let str = "3,4,3,1,2";
+        assert_eq!(six_one(str.parse().unwrap()), 5934)
+    }
+}
+
+fn six_two(resp: String) -> i32 {
+    0
+}
+
+fn six_one(resp: String) -> i128 {
+    let b = resp.split(",");
+    let mut vec:Vec<u8> = Vec::new();
+
+    for s in b {
+        let str = s.parse::<u8>();
+        match str {
+            Ok(i) => { vec.push(i); println!("{}", i);},
+            Err(err) => {println!("Error: {}", s);}
+        }
+    }
+    vec.push(3);
+
+    for i in 0 .. 80 {
+        println!("{}, {}", i, vec.len());
+        let mut count_add:i128 = 0;
+        for mut v in vec.iter_mut() {
+            if *v == 0 {
+                *v = 6;
+                count_add += 1;
+            } else {
+                *v = *v - 1;
+            }
+        }
+        for j in 0..count_add {
+            vec.push(8 as u8);
+        }
+    }
+
+    vec.len() as i128
+}
+
+fn five_two(resp: String) -> i32 {
+    let mut lines = resp.lines();
+    let mut count = 0;
+    let mut map: HashMap<(i32, i32), i32> = HashMap::new();
+
+    for line in lines {
+        let mut s = line.split_whitespace();
+
+        let mut begin = s.next().unwrap().split(",");
+        s.next();
+        let mut end = s.next().unwrap().split(",");
+
+        let b_x = begin.next().unwrap().parse::<i32>().unwrap();
+        let b_y = begin.next().unwrap().parse::<i32>().unwrap();
+        let e_x = end.next().unwrap().parse::<i32>().unwrap();
+        let e_y = end.next().unwrap().parse::<i32>().unwrap();
+
+        let start_x = if b_x <= e_x { b_x } else { e_x };
+        let end_x = if b_x <= e_x { e_x } else { b_x };
+
+        let start_y = if b_x <= e_x { b_y } else { e_y };
+        let end_y = if b_x <= e_x { e_y } else { b_y };
+        println!("{}, {}, {}, {}", start_x, start_y, end_x, end_y);
+
+        let mut grad = (0, 0);
+        let delta_x = if start_x == end_x { 0 } else { 1 };
+        let delta_y = if start_y < end_y { 1 } else if start_y > end_y { -1 } else { 0 };
+
+        let mut i = start_x;
+        let mut j = start_y;
+
+        while i != end_x || j != end_y {
+            if !map.contains_key(&(i, j)) {
+                map.insert((i, j), 1);
+            } else {
+                let val = map.entry((i,j)).or_default();
+                if *val == 1 {
+                    count += 1;
+                }
+                *val += 1;
+            }
+            println!("{}, {}: {}", i, j, map.get(&(i,j)).unwrap());
+            grad.1 = grad.1 + delta_y;
+            grad.0 = grad.0 + delta_x;
+            j = j + delta_y;
+            i = i + delta_x;
+        }
+        if !map.contains_key(&(i, j)) {
+            map.insert((i, j), 1);
+        } else {
+            let val = map.entry((i,j)).or_default();
+            if *val == 1 {
+                count += 1;
+            }
+            *val += 1;
+        }
+        println!("{}, {}: {}", i, j, map.get(&(i,j)).unwrap());
+    }
+    count
+}
+
+fn five_one(resp: String) -> i32 {
+    let mut lines = resp.lines();
+    let mut count = 0;
+    let mut map: HashMap<(i32, i32), i32> = HashMap::new();
+
+    for line in lines {
+        let mut s = line.split_whitespace();
+        let mut begin = s.next().unwrap().split(",");
+        s.next();
+        let mut end = s.next().unwrap().split(",");
+
+        let b_x = begin.next().unwrap().parse::<i32>().unwrap();
+        let b_y = begin.next().unwrap().parse::<i32>().unwrap();
+        let e_x = end.next().unwrap().parse::<i32>().unwrap();
+        let e_y = end.next().unwrap().parse::<i32>().unwrap();
+
+        if (b_x != e_x) && (b_y != e_y) {
+            continue;
+        }
+
+        let start_x = if b_x <= e_x { b_x } else { e_x };
+        let end_x = if b_x <= e_x { e_x } else { b_x };
+
+        let start_y = if b_y <= e_y { b_y } else { e_y };
+        let end_y = if b_y <= e_y { e_y } else { b_y };
+        println!("{}, {}, {}, {}", start_x, start_y, end_x, end_y);
+
+        for i in start_x .. end_x+1 {
+            for j in start_y .. end_y+1 {
+                if !map.contains_key(&(i, j)) {
+                    map.insert((i, j), 1);
+                } else {
+                    let val = map.entry((i,j)).or_default();
+                    if *val == 1 {
+                        count += 1;
+                    }
+                    *val += 1;
+                }
+            }
+        }
+    }
+
+    count
 }
 
 fn four_two(resp: String) -> i32 {
