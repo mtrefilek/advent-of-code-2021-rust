@@ -1,12 +1,12 @@
 use reqwest::{Url, ClientBuilder, header};
 use std::env;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let day = 6;
-    let step = 1;
+    let step = 2;
 
     execute(day, step).await?;
 
@@ -64,7 +64,7 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
 
 #[cfg(test)]
 mod tests {
-    use crate::{five_two, six_one};
+    use crate::{five_two, six_one, six_two};
 
     #[test]
     fn five_two_works() {
@@ -77,42 +77,106 @@ mod tests {
         let str = "3,4,3,1,2";
         assert_eq!(six_one(str.parse().unwrap()), 5934)
     }
+
+    #[test]
+    fn six_two_works() {
+        let str = "3,4,3,1,2";
+        assert_eq!(six_two(str.parse().unwrap()), 26984457539)
+    }
 }
 
-fn six_two(resp: String) -> i32 {
-    0
+fn six_two(resp: String) -> i128 {
+    let b = resp.split(",");
+    let mut vec:Vec<i128> = Vec::new();
+    let mut queue:VecDeque<i128> = VecDeque::new();
+
+    for i in 0 .. 7 {
+        vec.push(0);
+    }
+    for i in 0 .. 9 {
+        queue.push_back(0);
+    }
+    for s in b {
+        let str = s.parse::<usize>();
+        match str {
+            Ok(i) => {
+                match vec.get_mut(i) {
+                    Some(j) => {
+                        *j += 1;
+                    }
+                    None => {
+                        vec[i] = 1;
+                    }
+                }
+            },
+            Err(err) => {println!("Error: {}", s); vec[3] += 1;}
+        }
+    }
+    println!("{:?}", vec);
+
+    for i in 0 .. 256 {
+        let mod_i = i % 6;
+        let x = vec[mod_i];
+        if let Some(y) = vec.get_mut(mod_i) {
+            *y += queue.pop_front().unwrap();
+            queue.push_back(*y);
+        }
+    }
+    let mut count:i128 = 0;
+    for i in queue.iter() {
+        count += *i;
+    }
+    for v in vec {
+        count += v;
+    }
+    count
 }
 
 fn six_one(resp: String) -> i128 {
     let b = resp.split(",");
-    let mut vec:Vec<u8> = Vec::new();
+    let mut vec:Vec<i128> = Vec::new();
+    let mut queue:VecDeque<i128> = VecDeque::new();
 
+    for i in 0 .. 7 {
+        vec.push(0);
+    }
+    for i in 0 .. 9 {
+        queue.push_back(0);
+    }
     for s in b {
-        let str = s.parse::<u8>();
+        let str = s.parse::<usize>();
         match str {
-            Ok(i) => { vec.push(i); println!("{}", i);},
-            Err(err) => {println!("Error: {}", s);}
+            Ok(i) => {
+                match vec.get_mut(i) {
+                    Some(j) => {
+                        *j += 1;
+                    }
+                    None => {
+                        vec[i] = 1;
+                    }
+                }
+            },
+            Err(err) => {println!("Error: {}", s); vec[3] += 1;}
         }
     }
-    vec.push(3);
+    println!("{:?}", vec);
 
     for i in 0 .. 80 {
-        println!("{}, {}", i, vec.len());
-        let mut count_add:i128 = 0;
-        for mut v in vec.iter_mut() {
-            if *v == 0 {
-                *v = 6;
-                count_add += 1;
-            } else {
-                *v = *v - 1;
-            }
-        }
-        for j in 0..count_add {
-            vec.push(8 as u8);
+        let mod_i = i % 6;
+        let x = vec[mod_i];
+        if let Some(y) = vec.get_mut(mod_i) {
+            *y += queue.pop_front().unwrap();
+            queue.push_back(*y);
         }
     }
-
-    vec.len() as i128
+    let mut count:i128 = 0;
+    for i in queue.iter() {
+        count += *i;
+    }
+    for v in vec {
+        count += v;
+    }
+    count
 }
 
 fn five_two(resp: String) -> i32 {
