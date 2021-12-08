@@ -5,7 +5,7 @@ use std::collections::{HashMap, VecDeque};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let day = 6;
+    let day = 7;
     let step = 2;
 
     execute(day, step).await?;
@@ -54,6 +54,8 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
         10 => five_two(resp).to_string(),
         11 => six_one(resp).to_string(),
         12 => six_two(resp).to_string(),
+        13 => seven_one(resp).to_string(),
+        14 => seven_two(resp).to_string(),
         _ => "Not Implemented".to_string()
     };
 
@@ -64,7 +66,7 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
 
 #[cfg(test)]
 mod tests {
-    use crate::{five_two, six_one, six_two};
+    use crate::{five_two, six_one, six_two, seven_one, seven_two};
 
     #[test]
     fn five_two_works() {
@@ -83,6 +85,70 @@ mod tests {
         let str = "3,4,3,1,2";
         assert_eq!(six_two(str.parse().unwrap()), 26984457539)
     }
+
+    #[test]
+    fn seven_one_works() {
+        let str = "16,1,2,0,4,2,7,1,2,14";
+        assert_eq!(seven_one(str.parse().unwrap()), 37);
+    }
+
+    #[test]
+    fn seven_two_works() {
+        let str = "16,1,2,0,4,2,7,1,2,14";
+        assert_eq!(seven_two(str.parse().unwrap()), 168);
+    }
+}
+
+fn seven_two(mut resp:String) -> i64 {
+    // Algorithm for this one is: (|y-x|(|y-x|+1))/2
+    // Where y is the starting position. This creates an exponential function and we have to find the minima. We will perform a binary search
+    //Looking for a crate to perform a dertivative function
+    let len = resp.trim_end_matches(&['\r', '\n'][..]).len();
+    resp.truncate(len);
+    let b: Vec<i64> = resp.split(",").map(|str| {str.parse::<i64>().unwrap()}).collect();
+
+    let mut high = *b.iter().max().unwrap();
+    let mut low = 0;
+    loop {
+        let x = (high-low)/2 + low;
+        let tup = (dist(&b, x-1), dist(&b, x), dist(&b, x+1));
+        if tup.1 < tup.0 && tup.1 < tup.2 {
+            return tup.1
+        } else if tup.1 < tup.0 {
+            low = x+1;
+        } else {
+            high = x-1;
+        }
+    }
+}
+
+fn dist(v:&Vec<i64>, x:i64) -> i64 {
+    v.into_iter().map(|y| ((y-x).abs() * ((y-x).abs() + 1) / 2)).sum()
+}
+
+fn seven_one(mut resp:String) -> i64 {
+    let len = resp.trim_end_matches(&['\r', '\n'][..]).len();
+    resp.truncate(len);
+    let mut b: Vec<i64> = resp.split(",").map(|str| {str.parse::<i64>().unwrap()}).collect();
+    b.sort();
+    let mut queue:VecDeque<i64> = VecDeque::from(b.clone());
+    let mut until = if b.len() % 2 == 0 { 2 } else { 1 };
+    while queue.len() > until {
+        queue.pop_front();
+        queue.pop_back();
+    }
+    let mut median = 0;
+    for a in queue.iter() {
+        median += *a;
+    }
+    median = median / (until as i64);
+
+    let mut count = 0;
+    for i in b {
+        count += (i - median).abs();
+    }
+
+    count
 }
 
 fn six_two(resp: String) -> i128 {
@@ -115,7 +181,7 @@ fn six_two(resp: String) -> i128 {
     println!("{:?}", vec);
 
     for i in 0 .. 256 {
-        let mod_i = i % 6;
+        let mod_i = i % 7;
         let x = vec[mod_i];
         if let Some(y) = vec.get_mut(mod_i) {
             *y += queue.pop_front().unwrap();
@@ -159,10 +225,9 @@ fn six_one(resp: String) -> i128 {
             Err(err) => {println!("Error: {}", s); vec[3] += 1;}
         }
     }
-    println!("{:?}", vec);
 
     for i in 0 .. 80 {
-        let mod_i = i % 6;
+        let mod_i = i % 7;
         let x = vec[mod_i];
         if let Some(y) = vec.get_mut(mod_i) {
             *y += queue.pop_front().unwrap();
