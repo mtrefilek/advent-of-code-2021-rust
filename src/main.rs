@@ -1,11 +1,12 @@
 use reqwest::{Url, ClientBuilder, header};
 use std::env;
 use std::collections::{HashMap, VecDeque};
+use std::borrow::Borrow;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let day = 7;
+    let day = 8;
     let step = 2;
 
     execute(day, step).await?;
@@ -56,6 +57,8 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
         12 => six_two(resp).to_string(),
         13 => seven_one(resp).to_string(),
         14 => seven_two(resp).to_string(),
+        15 => eight_one(resp).to_string(),
+        16 => eight_two(resp).to_string(),
         _ => "Not Implemented".to_string()
     };
 
@@ -66,7 +69,8 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
 
 #[cfg(test)]
 mod tests {
-    use crate::{five_two, six_one, six_two, seven_one, seven_two};
+    use crate::{five_two, six_one, six_two, seven_one, seven_two, eight_one, eight_two};
+    use std::fs;
 
     #[test]
     fn five_two_works() {
@@ -97,6 +101,199 @@ mod tests {
         let str = "16,1,2,0,4,2,7,1,2,14";
         assert_eq!(seven_two(str.parse().unwrap()), 168);
     }
+
+    #[test]
+    fn eight_one_works() {
+        let str = fs::read_to_string("static/eight.in");
+        assert_eq!(eight_one(str.unwrap()), 26);
+    }
+
+    #[test]
+    fn eight_two_works() {
+        let str = fs::read_to_string("static/eight.in");
+        assert_eq!(eight_two(str.unwrap()), 61229);
+    }
+}
+
+fn eight_two(resp:String) -> i32 {
+    // 2: 1; 3: 7; 4: 4; 5: 2,3,5 6: 0, 6, 9 7: 0
+    // We know, 1, 7, 4, and 8
+    // item in seven not in one is on the top; two items from 1 on right side
+    // letter that is in 7 But not in one of the 3 6-count strings is the top right
+    // letter in one that is not top right is bottom right
+    // for all 5 letters, item that is not in 7 but is the same in all is either middle or bottom
+    // Of the above two, letter that is in all of 6 count is bottom and other one is middle
+    // We know 4, so the unknown left side shared with 4 is top left
+    // finally we get top right
+
+    // 0 2  5
+    //   3
+    // 1 4  6
+    // TEST: ab right side in 1 so d is top
+    // a top right
+    // b bottom right
+    // c and f are middles
+    // c is bottom
+    // f middle
+    // e top right
+    // g bottom right
+    let mut ans = 0;
+    for line in resp.lines() {
+        let v: Vec<&str> = line.split(" | ").collect();
+        let mut lengths:HashMap<usize, Vec<&str>> = HashMap::new();
+        let l: Vec<&str> = v[0].split(" ").collect();
+        for s in l {
+            let lengths_i = lengths.entry(s.len()).or_insert(Vec::new());
+            lengths_i.push(s);
+        }
+        let r: Vec<&str> = v[1].split(" ").collect();
+
+        let mut key:HashMap<i8, char> = HashMap::new();
+
+        // get top
+        let seven = lengths.get(&3).unwrap()[0];
+        let one = lengths.get(&2).unwrap()[0];
+
+        for char in seven.chars() {
+            match one.find(char) {
+                Some(i) => {},
+                None => {key.insert(2, char);}
+            }
+        }
+
+        for char in seven.chars() {
+            for s in lengths.get(&6).unwrap() {
+                match s.find(char) {
+                    Some(i) => {},
+                    None => {
+                        key.insert(5, char);
+                        for char2 in one.chars() {
+                            if char != char2 {
+                                key.insert(6, char2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut chars_tmp:HashMap<char, i8> = HashMap::new();
+        for s in lengths.get(&5).unwrap() {
+            for char in s.chars() {
+                let cnt = chars_tmp.entry(char).or_insert(0);
+                *cnt += 1;
+            }
+        }
+
+        for (char, i) in chars_tmp {
+            if i != 3 {
+                continue
+            }
+            match seven.find(char) {
+                Some(i) => {
+
+                },
+                None => {
+                    let mut found = true;
+                    for s in lengths.get(&6).unwrap() {
+                        match s.find(char) {
+                            Some(i) => {},
+                            None => {found = false}
+                        }
+                    }
+                    if found {
+                        key.insert(4, char);
+                    } else {
+                        key.insert(3, char);
+                    }
+                }
+            }
+        }
+        let four = lengths.get(&4).unwrap()[0];
+        let mut found:char = 'z';
+        for char in four.chars() {
+            let mut in_str = false;
+            for (i, char2) in &key {
+                if char == *char2 {
+                    in_str = true;
+                }
+            }
+            if !in_str {
+                key.insert(0, char);
+            }
+        }
+        let eight = lengths.get(&7).unwrap()[0];
+        for char in eight.chars() {
+            let mut in_str = false;
+            for (i, char2) in &key {
+                if char == *char2 {
+                    in_str = true;
+                }
+            }
+            if !in_str {
+                key.insert(1, char);
+            }
+        }
+
+        let mut k_inv: HashMap<char, i8> = HashMap::new();
+        for (i, char) in &key {
+            k_inv.insert(*char, *i);
+        }
+        let mut count = 1000;
+        let mut num = 0;
+
+        for s in r {
+            let mut dig = 0;
+            if s.len() == 2 {
+                dig = 1;
+            } else if s.len() == 3 {
+                dig = 7;
+            } else if s.len() == 4 {
+                dig = 4;
+            } else if s.len() == 7 {
+                dig = 8;
+            } else {
+                let mut vec:Vec<i8> = Vec::new();
+                for char in s.chars() {
+                    vec.push(*k_inv.get(&char).unwrap());
+                }
+                vec.sort();
+                if vec == [0, 1, 2, 4, 5, 6] {
+                    dig = 0;
+                } else if vec == [1, 2, 3, 4, 5] {
+                    dig = 2;
+                } else if vec == [2, 3, 4, 5, 6] {
+                    dig = 3;
+                } else if vec == [0, 2, 3, 4, 6] {
+                    dig = 5;
+                } else if vec == [0, 1, 2, 3, 4, 6] {
+                    dig = 6;
+                } else if vec == [0, 2, 3, 4, 5, 6] {
+                    dig = 9;
+                }
+            }
+            num += dig * count;
+            count = count / 10;
+        }
+        ans += num;
+    }
+    ans
+}
+
+fn eight_one(resp:String) -> i64 {
+    let mut count = 0;
+    for line in resp.lines() {
+        let v:Vec<&str> = line.split(" | ").collect();
+        let l:Vec<&str> = v[0].split(" ").collect();
+        let r:Vec<&str> = v[1].split(" ").collect();
+
+        for s in r {
+            if s.len() == 2 || s.len() == 3 || s.len() == 4 || s.len() == 7 {
+                count += 1;
+            }
+        }
+    }
+    count
 }
 
 fn seven_two(mut resp:String) -> i64 {
