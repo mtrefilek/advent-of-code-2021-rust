@@ -6,8 +6,8 @@ use std::borrow::Borrow;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let day = 8;
-    let step = 2;
+    let day = 9;
+    let step = 1;
 
     execute(day, step).await?;
 
@@ -59,6 +59,7 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
         14 => seven_two(resp).to_string(),
         15 => eight_one(resp).to_string(),
         16 => eight_two(resp).to_string(),
+        17 => nine_one(resp).to_string(),
         _ => "Not Implemented".to_string()
     };
 
@@ -69,7 +70,7 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
 
 #[cfg(test)]
 mod tests {
-    use crate::{five_two, six_one, six_two, seven_one, seven_two, eight_one, eight_two};
+    use crate::{five_two, six_one, six_two, seven_one, seven_two, eight_one, eight_two, nine_one};
     use std::fs;
 
     #[test]
@@ -113,6 +114,84 @@ mod tests {
         let str = fs::read_to_string("static/eight.in");
         assert_eq!(eight_two(str.unwrap()), 61229);
     }
+
+    #[test]
+    fn nine_one_works() {
+        let str = fs::read_to_string("static/nine.in");
+        assert_eq!(nine_one(str.unwrap()), 15);
+    }
+}
+
+fn nine_one(resp:String) -> i32 {
+    let mut map:Vec<Vec<i32>> = Vec::new();
+    for line in resp.lines() {
+        let mut v:Vec<i32> = Vec::new();
+        for char in line.chars() {
+            let z = char.to_digit(10).unwrap();
+            v.push(z as i32);
+        }
+        map.push(v);
+    }
+    let mut calc = 0;
+    for (y, row) in map.iter().enumerate() {
+        for (x, height) in row.iter().enumerate() {
+
+            match map.get(((y as i32) - 1) as usize) {
+                Some(r) => {
+                    match r.get(x) {
+                        Some(h) => {
+                            if h <= height {
+                                continue
+                            }
+                        },
+                        None => {}
+                    }
+                },
+                None => {}
+            }
+            match map.get(((y as i32)+1) as usize) {
+                Some(r) => {
+                    match r.get(x) {
+                        Some(h) => {
+                            if h <= height {
+                                continue
+                            }
+                        },
+                        None => {}
+                    }
+                },
+                None => {}
+            }
+            match map.get(y) {
+                Some(r) => {
+                    match r.get(((x as i32) -1) as usize) {
+                        Some(h) => {
+                            if h <= height {
+                                continue
+                            }
+                        },
+                        None => {}
+                    }
+                },
+                None => {}
+            }
+            match map.get(y) {
+                Some(r) => {
+                    match r.get(((x as i32) +1) as usize) {
+                        Some(h) => {
+                            if h <= height {
+                                continue
+                            }
+                        },
+                        None => {}
+                    }
+                },
+                None => {}
+            }
+            calc += height + 1;
+        }
+    }
+    calc
 }
 
 fn eight_two(resp:String) -> i32 {
