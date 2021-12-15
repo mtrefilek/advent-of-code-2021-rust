@@ -70,7 +70,7 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
 
 #[cfg(test)]
 mod tests {
-    use crate::{five_two, six_one, six_two, seven_one, seven_two, eight_one, eight_two, nine_one};
+    use crate::{five_two, six_one, six_two, seven_one, seven_two, eight_one, eight_two, nine_one, nine_two};
     use std::fs;
 
     #[test]
@@ -120,6 +120,221 @@ mod tests {
         let str = fs::read_to_string("static/nine.in");
         assert_eq!(nine_one(str.unwrap()), 15);
     }
+
+    #[test]
+    fn nine_two_works() {
+        let str = fs::read_to_string("static/nine.in");
+        assert_eq!(nine_two(str.unwrap()), 1134);
+    }
+}
+
+fn nine_two(resp:String) -> i31 {
+    let mut map:Vec<Vec<i32>> = Vec::new();
+    for line in resp.lines() {
+        let mut v:Vec<i32> = Vec::new();
+        for char in line.chars() {
+            let z = char.to_digit(10).unwrap();
+            v.push(z as i32);
+        }
+        map.push(v);
+    }
+
+    let mut basin_memoize:HashMap<(usize, usize), (usize, usize)> = HashMap::new();
+    let mut basin_count: HashMap<(usize, usize), i32> = HashMap::new();
+
+    for (y, row) in map.iter().enumerate() {
+        for (x, height) in row.iter().enumerate() {
+            match basin_memoize.get(&(x, y)) {
+                Some(i) => {
+                    let sum = basin_count.entry(*i).or_default();
+                    *sum += height;
+                    basin_memoize.insert((x, y), *i);
+                    continue
+                },
+                None => {}
+            }
+
+            match map.get(y) {
+                Some(r) => {
+                    match r.get(x) {
+                        Some(h) => {
+                            if h == 9 {
+                                continue
+                            }
+                        },
+                        None => {
+
+                        }
+                    }
+                },
+                None => {}
+            }
+
+            let minima = gradient_descent((x, y), &map);
+            basin_memoize.insert((x, y), minima);
+            let sum = basin_count.entry((x, y)).or_default();
+            *sum += height;
+        }
+    }
+
+    0
+}
+
+fn gradient_descent(index:(usize, usize), map:&Vec<Vec<i32>>) -> (usize, usize) {
+    if local_minima(index, &map) {
+        return index;
+    } else {
+        return gradient_descent(steepest_gradient(index, &map), &map);
+    }
+    index
+}
+
+fn local_minima(index:(usize, usize), map:&Vec<Vec<i32>>) -> bool {
+    let height =  match map.get(index.1) {
+        Some(r) => {
+            match r.get(index.0) {
+                Some(h) => {
+                    h
+                },
+                None => {
+                    0
+                }
+            }
+        },
+        None => {0}
+    };
+    x = index.0;
+    y = index.1;
+    match map.get(((y as i32) - 1) as usize) {
+        Some(r) => {
+            match r.get(x) {
+                Some(h) => {
+                    if h <= height {
+                        return false
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    match map.get(((y as i32)+1) as usize) {
+        Some(r) => {
+            match r.get(x) {
+                Some(h) => {
+                    if h <= height {
+                        return false
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    match map.get(y) {
+        Some(r) => {
+            match r.get(((x as i32) -1) as usize) {
+                Some(h) => {
+                    if h <= height {
+                        return false
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    match map.get(y) {
+        Some(r) => {
+            match r.get(((x as i32) +1) as usize) {
+                Some(h) => {
+                    if h <= height {
+                        return false
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    true
+}
+
+fn steepest_gradient(index:(usize, usize), map:&Vec<Vec<i32>>) -> (usize, usize) {
+    let height =  match map.get(index.1) {
+        Some(r) => {
+            match r.get(index.0) {
+                Some(h) => {
+                    h
+                },
+                None => {
+                    0
+                }
+            }
+        },
+        None => {0}
+    };
+    x = index.0;
+    y = index.1;
+    let mut max_grad = 0;
+    let mut max_grad_i = (x, y);
+    match map.get(((y as i32) - 1) as usize) {
+        Some(r) => {
+            match r.get(x) {
+                Some(h) => {
+                    if h <= height && height - h > max_grad {
+                        max_grad = height - h;
+                        max_grad_i = (x, y-1);
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    match map.get(((y as i32)+1) as usize) {
+        Some(r) => {
+            match r.get(x) {
+                Some(h) => {
+                    if h <= height && height - h > max_grad {
+                        max_grad = height - h;
+                        max_grad_i = (x, y+1);
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    match map.get(y) {
+        Some(r) => {
+            match r.get(((x as i32) -1) as usize) {
+                Some(h) => {
+                    if h <= height && height - h > max_grad {
+                        max_grad = height - h;
+                        max_grad_i = (x-1, y);
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    match map.get(y) {
+        Some(r) => {
+            match r.get(((x as i32) +1) as usize) {
+                Some(h) => {
+                    if h <= height && height - h > max_grad {
+                        max_grad = height - h;
+                        max_grad_i = (x+1, y);
+                    }
+                },
+                None => {}
+            }
+        },
+        None => {}
+    }
+    max_grad_i
 }
 
 fn nine_one(resp:String) -> i32 {
