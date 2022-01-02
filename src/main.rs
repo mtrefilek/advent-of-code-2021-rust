@@ -1,13 +1,12 @@
 use reqwest::{Url, ClientBuilder, header};
 use std::env;
 use std::collections::{HashMap, VecDeque};
-use std::borrow::Borrow;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let day = 9;
-    let step = 1;
+    let step = 2;
 
     execute(day, step).await?;
 
@@ -60,6 +59,7 @@ async fn execute(day: i32, step: i32) -> Result<(), Box<dyn std::error::Error>> 
         15 => eight_one(resp).to_string(),
         16 => eight_two(resp).to_string(),
         17 => nine_one(resp).to_string(),
+        18 => nine_two(resp).to_string(),
         _ => "Not Implemented".to_string()
     };
 
@@ -128,7 +128,7 @@ mod tests {
     }
 }
 
-fn nine_two(resp:String) -> i31 {
+fn nine_two(resp:String) -> i32 {
     let mut map:Vec<Vec<i32>> = Vec::new();
     for line in resp.lines() {
         let mut v:Vec<i32> = Vec::new();
@@ -158,7 +158,7 @@ fn nine_two(resp:String) -> i31 {
                 Some(r) => {
                     match r.get(x) {
                         Some(h) => {
-                            if h == 9 {
+                            if *h == 9 {
                                 continue
                             }
                         },
@@ -172,12 +172,19 @@ fn nine_two(resp:String) -> i31 {
 
             let minima = gradient_descent((x, y), &map);
             basin_memoize.insert((x, y), minima);
-            let sum = basin_count.entry((x, y)).or_default();
-            *sum += height;
+            let sum = basin_count.entry(minima).or_default();
+            *sum += 1;
         }
     }
-
-    0
+    println!("{:?}", basin_count);
+    let mut vec:Vec<&i32> = basin_count.values().collect();
+    let mut sum = 1;
+    vec.sort();
+    for i in 1 .. 4 {
+        sum *= vec[vec.len() - i];
+    }
+    println!("{:?}", vec);
+    sum
 }
 
 fn gradient_descent(index:(usize, usize), map:&Vec<Vec<i32>>) -> (usize, usize) {
@@ -186,7 +193,6 @@ fn gradient_descent(index:(usize, usize), map:&Vec<Vec<i32>>) -> (usize, usize) 
     } else {
         return gradient_descent(steepest_gradient(index, &map), &map);
     }
-    index
 }
 
 fn local_minima(index:(usize, usize), map:&Vec<Vec<i32>>) -> bool {
@@ -197,14 +203,14 @@ fn local_minima(index:(usize, usize), map:&Vec<Vec<i32>>) -> bool {
                     h
                 },
                 None => {
-                    0
+                   & 0
                 }
             }
         },
-        None => {0}
+        None => {&0}
     };
-    x = index.0;
-    y = index.1;
+    let x = index.0;
+    let y = index.1;
     match map.get(((y as i32) - 1) as usize) {
         Some(r) => {
             match r.get(x) {
@@ -268,14 +274,14 @@ fn steepest_gradient(index:(usize, usize), map:&Vec<Vec<i32>>) -> (usize, usize)
                     h
                 },
                 None => {
-                    0
+                    &0
                 }
             }
         },
-        None => {0}
+        None => {&0}
     };
-    x = index.0;
-    y = index.1;
+    let x = index.0;
+    let y = index.1;
     let mut max_grad = 0;
     let mut max_grad_i = (x, y);
     match map.get(((y as i32) - 1) as usize) {
